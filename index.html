@@ -76,8 +76,9 @@ img{max-width:100%}
   /* ---------- the taskbar ----------
      Short on purpose: every pixel here is a pixel the photos don't get. */
   #taskbar{
-    flex:0 0 auto;display:flex;align-items:stretch;gap:4px;height:38px;
-    padding:3px 4px;padding-bottom:calc(3px + env(safe-area-inset-bottom,0px));
+    /* 44px of content so every control in here clears the minimum tap target */
+    flex:0 0 auto;display:flex;align-items:stretch;gap:4px;height:44px;
+    padding:2px 4px;padding-bottom:calc(2px + env(safe-area-inset-bottom,0px));
     box-sizing:content-box;
     background:linear-gradient(180deg,#2b6fd8 0%,#1b4fb0 6%,#1f58c4 52%,#123f97 100%);
     box-shadow:inset 0 1px 0 #6fa4ee, inset 0 2px 0 rgba(255,255,255,.18);
@@ -91,7 +92,7 @@ img{max-width:100%}
 
   /* icon only — the word "Start" was costing width the progress readout needs */
   #tb-start{
-    flex:0 0 auto;width:40px;padding:0;justify-content:center;
+    flex:0 0 auto;width:46px;padding:0;justify-content:center;
     border-radius:0 7px 7px 0;
     background:linear-gradient(180deg,#5cc04a 0%,#3d9b2f 45%,#2f7f24 100%);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.55), inset -1px -1px 0 rgba(0,0,0,.35);
@@ -153,7 +154,7 @@ img{max-width:100%}
   #startmenu .items{flex:1 1 auto;display:flex;flex-direction:column;}
   #startmenu button{
     display:flex;align-items:center;gap:9px;padding:9px 10px;background:none;box-shadow:none;
-    text-align:left;font-size:13px;min-height:42px;color:var(--ink);
+    text-align:left;font-size:13px;min-height:44px;color:var(--ink);
   }
   #startmenu button:hover{background:var(--select);color:#fff;}
   #startmenu button:active{background:var(--select);color:#fff;padding:9px 10px;}
@@ -204,7 +205,10 @@ img{max-width:100%}
      it loads), so it shrink-wraps the image exactly and the date chip pins to the
      photo's corner rather than floating in the slot. A flex wrapper would stretch
      the image instead — that was the bug. */
-  .shot-wrap{position:relative;display:block;height:100%;width:auto;
+  /* width:100% until the image loads — a flex item with width:auto and nothing
+     to measure collapses to zero, which shows as the slot blinking shut on a
+     photo that has not been fetched yet. shrinkWrap tightens it on load. */
+  .shot-wrap{position:relative;display:block;height:100%;width:100%;
     max-width:100%;max-height:100%;min-height:0;}
   .shot-wrap img{display:block;width:100%;height:100%;object-fit:contain;}
   .shot-wrap .when{
@@ -786,6 +790,26 @@ img{max-width:100%}
     persist(); render();
   }
 
+  /* Fetch the next few matches' photos while the current one is on screen, so a
+     picture is already decoded by the time it is needed. Without this, every
+     photo's first appearance waits on a fresh download. */
+  var preloaded = {};
+  function preloadAhead(){
+    for(var k = 1; k <= 3; k++){
+      var pair = G.pairs[G.mIdx + k];
+      if(!pair) break;
+      for(var j = 0; j < pair.length; j++){
+        var p = byId(pair[j]);
+        if(p && p.url && !preloaded[p.url]){
+          preloaded[p.url] = true;
+          var im = new Image();
+          im.decoding = "async";
+          im.src = p.url;
+        }
+      }
+    }
+  }
+
   function standings(){
     return G.photos.slice().sort(function(x,y){
       var a = x.id===G.champion ? 99 : (x.outRound===null ? -1 : x.outRound);
@@ -973,6 +997,7 @@ img{max-width:100%}
     });
 
     openMatchSplash(G.labels[G.roundNo] || "Round " + (G.roundNo + 1), style, vsStyle);
+    preloadAhead();
 
     /* bound to the fresh node, so a re-render can never stack listeners */
     var picked = false;
