@@ -2,8 +2,8 @@
 
 A single-elimination knockout for a year of photos, dressed as Windows 98.
 
-Two photos at a time. Pick the one you like more; the other is out. 32 photos go in
-over 31 matches and five rounds, and one comes out as Pic of the Year.
+Two photos at a time. Pick the one you like more; the other is out. 130 photos go in
+over 129 matches and eight rounds, and one comes out as Pic of the Year.
 
 **Play it:** https://mazuz22.github.io/rate-the-pic/
 
