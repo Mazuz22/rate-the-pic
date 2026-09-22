@@ -60,10 +60,10 @@ img{max-width:100%}
   #chrome{
     flex:0 0 auto;background:linear-gradient(90deg,var(--title-a),var(--title-b));
     color:var(--hilite);display:flex;align-items:center;gap:8px;
-    padding:8px 10px 8px 12px;font-weight:bold;font-size:13px;
-    padding-top:calc(8px + env(safe-area-inset-top,0px));
+    padding:4px 10px 4px 12px;font-weight:bold;font-size:12.5px;
+    padding-top:calc(4px + env(safe-area-inset-top,0px));
   }
-  #chrome svg{width:17px;height:17px;flex:0 0 auto;}
+  #chrome svg{width:15px;height:15px;flex:0 0 auto;}
   #chrome .tt{flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #chrome button{min-height:44px;width:44px;height:44px;padding:0;display:grid;place-items:center;
     font-size:13px;margin:-6px -4px -6px 0;}
@@ -258,13 +258,25 @@ img{max-width:100%}
   .btnrow{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
   .btnrow button{flex:1 1 140px;}
 
+  /* ---------- the cover fills the screen too ----------
+     Title, photo, name, Start — nothing below the fold, and the photo takes
+     whatever height the rest does not need. */
+  #view.covfit{overflow:hidden;display:flex;padding:6px 8px 8px;}
+  #view.covfit .stage{display:flex;width:100%;height:100%;}
+  #view.covfit .card{margin:0;width:100%;display:flex;flex-direction:column;gap:4px;padding:10px;}
+  #view.covfit #cover-title .wordart{max-height:13vh;}
+  #view.covfit #cover-sub .wordart{max-height:10vh;}
+  #view.covfit #cover-photo{flex:1 1 auto;min-height:0;aspect-ratio:auto;margin:2px 0;}
+  #view.covfit .hearts{flex:0 0 auto;height:24px;}
+  #view.covfit .btnrow{flex:0 0 auto;margin-top:2px;}
+
   /* ---------- the match view is only the photos ----------
      Round name, match number and overall progress all live in the taskbar now,
      so nothing competes with the pictures for the screen. */
-  #view.fit{overflow:hidden;display:flex;padding:4px 5px 2px;}
+  #view.fit{overflow:hidden;display:flex;padding:2px 4px 2px;}
   #view.fit .stage{display:flex;width:100%;height:100%;max-width:none;}
   /* the badge is a real grid row, so it cannot land on a photo or its date */
-  #view.fit .versus{flex:1 1 auto;min-height:0;width:100%;margin:0;gap:8px;position:static;
+  #view.fit .versus{flex:1 1 auto;min-height:0;width:100%;margin:0;gap:4px;position:static;
     grid-template-columns:1fr;grid-template-rows:1fr 1fr;}
   #view.fit .vs-pick{min-height:0;display:flex;flex-direction:column;background:none;box-shadow:none;}
 
@@ -279,13 +291,6 @@ img{max-width:100%}
     box-shadow:0 0 0 1px var(--shadow), 2px 2px 0 rgba(0,0,0,.35);
   }
   #view.fit .askline{display:none;}
-
-  /* the hit counter every 1999 homepage had, wired to something true for once */
-  .odo{display:inline-flex;gap:2px;background:#000;padding:3px;margin-top:2px;
-    box-shadow:inset -1px -1px 0 var(--hilite), inset 1px 1px 0 var(--shadow), inset -2px -2px 0 var(--face-lt), inset 2px 2px 0 var(--dkshadow);}
-  .odo b{font-family:var(--mono);font-size:17px;font-weight:bold;color:#33ff33;
-    background:#0a1a0a;padding:1px 4px;line-height:1.2;font-variant-numeric:tabular-nums;}
-  .odolabel{font-size:11px;color:#444;margin:5px 0 0;font-family:var(--ui);}
 
   .hearts{position:relative;height:44px;overflow:hidden;}
   .hearts i{position:absolute;bottom:-18px;font-style:normal;color:var(--accent);font-size:16px;
@@ -782,8 +787,6 @@ img{max-width:100%}
       if(G.through.length <= 1){
         G.champion = G.through[0];
         G.phase = "champion";
-        CROWNED++;
-        idbSet("crowned", CROWNED).catch(function(){});
       }
       else { G.roundNo++; buildRound(G.through); }
     }
@@ -824,13 +827,6 @@ img{max-width:100%}
   var stage = $("#stage");
   var COVER_A = Math.floor(Math.random()*STYLES.length);
   var COVER_B = (COVER_A + 5) % STYLES.length;
-  var CROWNED = 0;
-
-  function odometer(n){
-    var s = String(Math.max(0, n|0));
-    while(s.length < 6) s = "0" + s;      /* six digits, as they always were */
-    return s.split("").map(function(d){ return "<b>" + d + "</b>"; }).join("");
-  }
 
   /* ---------- the taskbar carries the numbers ---------- */
   function updateTaskbar(){
@@ -895,14 +891,14 @@ img{max-width:100%}
   }
 
   /* queue the cards that open a match */
-  function openMatchSplash(label, titleStyle, vsStyle){
+  function openMatchSplash(label, titleStyle){
     if(CALM) return;
     splashQueue.length = 0;
     if(G.roundNo !== splashShownFor){
       splashShownFor = G.roundNo;
       splashQueue.push({text:label, style:titleStyle, ms:1150});
     }
-    splashQueue.push({text:"VS", style:vsStyle, ms:750});
+    if(!splashQueue.length) return;   /* nothing to announce inside a round */
     playSplash();
   }
 
@@ -913,6 +909,7 @@ img{max-width:100%}
     $("#wintitle").textContent = G.phase === "champion" ? "Pic of the Year" : "Rate the Pic";
     /* only the match view is pinned to the viewport; cover and results scroll */
     $("#view").classList.toggle("fit", G.phase === "match");
+    $("#view").classList.toggle("covfit", G.phase === "cover");
     fitWordArt(stage);
     animateIn(stage, 90);
     updateTaskbar();
@@ -920,6 +917,8 @@ img{max-width:100%}
     $("#view").scrollTop = 0;
   }
 
+  /* One card, no scrolling: title, the photo, the name, Start. The counts the
+     blurb used to give are already in the taskbar. */
   function renderCover(){
     var pick = G.photos.length ? G.photos[Math.floor(Math.random()*G.photos.length)] : null;
     stage.innerHTML =
@@ -932,17 +931,7 @@ img{max-width:100%}
           : '')
       + '<div id="cover-sub">' + wordArt("Yuval & Rony", {style:COVER_B, size:64}) + '</div>'
       + '<div class="hearts" id="hc"></div>'
-      + '</div>'
-      + '<div class="card">'
-      + '<p>Two photos at a time. Pick the one you like more &mdash; the other is out. '
-      + 'Keep going until one is left.</p>'
-      + '<p class="fileno">' + G.photos.length + ' photos &middot; '
-      + Math.max(0, G.photos.length-1) + ' matches &middot; one winner</p>'
       + '<div class="btnrow"><button class="primary" id="c-start">Start</button></div>'
-      + '<div style="text-align:center;margin-top:12px">'
-      + '<div class="odo">' + odometer(CROWNED) + '</div>'
-      + '<p class="odolabel">winners crowned on this device</p>'
-      + '</div>'
       + '</div>';
     floatHearts("hc");
     $("#c-start").addEventListener("click", function(){ startTournament(); persist(); render(); });
@@ -955,10 +944,6 @@ img{max-width:100%}
     if(!a || !b){ G.mIdx++; return renderMatch(); }
 
     var style = G.styleOrder[G.roundNo % G.styleOrder.length];
-    var vsStyle = (G.vsOrder && G.vsOrder.length)
-      ? G.vsOrder[G.roundNo % G.vsOrder.length]
-      : (style + 6) % STYLES.length;
-
     /* the date rides on the picture's own corner, so it costs no layout height
        and cannot collide with the badge between the photos */
     function side(p, other, key){
@@ -996,7 +981,7 @@ img{max-width:100%}
       else img.addEventListener("load", function(){ shrinkWrap(img); }, {once:true});
     });
 
-    openMatchSplash(G.labels[G.roundNo] || "Round " + (G.roundNo + 1), style, vsStyle);
+    openMatchSplash(G.labels[G.roundNo] || "Round " + (G.roundNo + 1), style);
     preloadAhead();
 
     /* bound to the fresh node, so a re-render can never stack listeners */
@@ -1170,13 +1155,6 @@ img{max-width:100%}
   if(document.fonts && document.fonts.ready){
     document.fonts.ready.then(function(){ fitWordArt(stage); }).catch(function(){});
   }
-
-  idbGet("crowned").then(function(n){
-    if(typeof n === "number" && n > 0){
-      CROWNED = n;
-      if(G.phase === "cover") render();
-    }
-  }).catch(function(){});
 
   /* pick a half-finished tournament back up where it was left */
   idbGet("tourney").then(function(s){
