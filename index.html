@@ -211,8 +211,6 @@ img{max-width:100%}
     position:absolute;left:0;bottom:0;background:rgba(0,0,0,.62);color:#fff;
     font-family:var(--ui);font-size:11px;padding:2px 6px;letter-spacing:.01em;
   }
-  .vsbadge{display:grid;place-items:center;}
-  .vsbadge svg{width:76px;height:auto;}
 
   /* ---------- the VS ----------
      It draws a fresh gallery style each round, so the change gets an entrance
@@ -262,11 +260,8 @@ img{max-width:100%}
   #view.fit{overflow:hidden;display:flex;padding:4px 5px 2px;}
   #view.fit .stage{display:flex;width:100%;height:100%;max-width:none;}
   /* the badge is a real grid row, so it cannot land on a photo or its date */
-  #view.fit .versus{flex:1 1 auto;min-height:0;width:100%;margin:0;gap:4px;position:static;
-    grid-template-columns:1fr;grid-template-rows:1fr auto 1fr;}
-  #view.fit .vsbadge{position:static;transform:none;width:60px;margin:0 auto;padding:0;
-    background:none;box-shadow:none;}
-  #view.fit .vsbadge svg{width:100%;height:auto;max-height:28px;display:block;}
+  #view.fit .versus{flex:1 1 auto;min-height:0;width:100%;margin:0;gap:8px;position:static;
+    grid-template-columns:1fr;grid-template-rows:1fr 1fr;}
   #view.fit .vs-pick{min-height:0;display:flex;flex-direction:column;background:none;box-shadow:none;}
 
   /* No fixed frame. A portrait photo in a wide short box is mostly black bars,
@@ -340,9 +335,7 @@ img{max-width:100%}
   @media (min-width:700px){
     #view{padding:20px 24px 28px;}
     .versus{grid-template-columns:1fr 1fr;align-items:start;}
-    .vsbadge{grid-column:1 / -1;order:-1;}
     #view.fit .versus{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;}
-    #view.fit .vsbadge{grid-column:1 / -1;order:-1;}
   }
 </style>
 
@@ -831,29 +824,58 @@ img{max-width:100%}
     bar.innerHTML = s;
   }
 
-  /* ---------- the round splash ----------
-     The WordArt title still announces each round, then gets out of the way. */
-  var splashShownFor = -1, splashTimer = null, lastVsRound = -1;
-  function maybeSplash(){
-    if(G.phase !== "match") return;
-    if(G.roundNo === splashShownFor) return;
-    splashShownFor = G.roundNo;
+  /* ---------- the splash ----------
+     A queue of WordArt cards shown over the photos before a match starts: the
+     round title when a round turns over, then the VS. Tapping skips the rest,
+     so it never gets in the way of someone moving fast. */
+  var splashShownFor = -1, splashTimer = null, splashQueue = [];
+
+  function playSplash(){
     var el = $("#splash");
     if(!el) return;
-    var label = G.labels[G.roundNo] || "Round " + (G.roundNo + 1);
-    $("#splashart").innerHTML = wordArt(label, {style:G.styleOrder[G.roundNo % G.styleOrder.length]});
+    if(!splashQueue.length){
+      el.hidden = true; el.classList.remove("out");
+      return;
+    }
+    var item = splashQueue.shift();
+    $("#splashart").innerHTML = wordArt(item.text, {style:item.style});
     el.classList.remove("out");
     el.hidden = false;
     fitWordArt(el);
+    /* restart the entrance for each card in the queue */
+    var art = $("#splashart");
+    art.style.animation = "none"; void art.offsetWidth; art.style.animation = "";
     clearTimeout(splashTimer);
-    splashTimer = setTimeout(hideSplash, CALM ? 900 : 1500);
+    splashTimer = setTimeout(advanceSplash, item.ms);
   }
-  function hideSplash(){
+  function advanceSplash(){
     var el = $("#splash");
     if(!el || el.hidden) return;
     clearTimeout(splashTimer);
     el.classList.add("out");
-    setTimeout(function(){ el.hidden = true; el.classList.remove("out"); }, CALM ? 0 : 330);
+    splashTimer = setTimeout(function(){ el.classList.remove("out"); playSplash(); }, CALM ? 0 : 260);
+  }
+  function skipSplash(){
+    splashQueue.length = 0;
+    advanceSplash();
+  }
+  function hideSplash(){
+    var el = $("#splash");
+    splashQueue.length = 0;
+    clearTimeout(splashTimer);
+    if(el){ el.hidden = true; el.classList.remove("out"); }
+  }
+
+  /* queue the cards that open a match */
+  function openMatchSplash(label, titleStyle, vsStyle){
+    if(CALM) return;
+    splashQueue.length = 0;
+    if(G.roundNo !== splashShownFor){
+      splashShownFor = G.roundNo;
+      splashQueue.push({text:label, style:titleStyle, ms:1150});
+    }
+    splashQueue.push({text:"VS", style:vsStyle, ms:750});
+    playSplash();
   }
 
   function render(){
@@ -866,7 +888,7 @@ img{max-width:100%}
     fitWordArt(stage);
     animateIn(stage, 90);
     updateTaskbar();
-    maybeSplash();
+    if(G.phase !== "match") hideSplash();
     $("#view").scrollTop = 0;
   }
 
@@ -919,10 +941,10 @@ img{max-width:100%}
         + '</span></span></button>';
     }
 
+    /* the VS lives on the opening card now, not between the pictures */
     stage.innerHTML =
       '<div class="versus pop">'
       + side(a, b, "This one")
-      + '<div class="vsbadge">' + wordArt("VS", {style:vsStyle, size:90}) + '</div>'
       + side(b, a, "Or this one")
       + '</div>';
 
@@ -946,19 +968,7 @@ img{max-width:100%}
       else img.addEventListener("load", function(){ shrinkWrap(img); }, {once:true});
     });
 
-    /* A new round brings a new VS style, so it gets a full entrance to announce
-       the change; within a round it just snaps in. Either way it ends on a slow
-       beat so the thing never sits perfectly still. */
-    var vsEl = stage.querySelector(".vsbadge");
-    if(vsEl && !CALM){
-      var freshRound = (G.roundNo !== lastVsRound);
-      lastVsRound = G.roundNo;
-      vsEl.classList.add(freshRound ? "vs-new" : "vs-snap");
-      vsEl.addEventListener("animationend", function(){
-        vsEl.classList.remove("vs-new","vs-snap");
-        vsEl.classList.add("vs-beat");
-      }, {once:true});
-    }
+    openMatchSplash(G.labels[G.roundNo] || "Round " + (G.roundNo + 1), style, vsStyle);
 
     /* bound to the fresh node, so a re-render can never stack listeners */
     var picked = false;
@@ -1033,7 +1043,6 @@ img{max-width:100%}
     host.classList.add("stagger");
 
     Array.prototype.forEach.call(host.querySelectorAll("svg.wordart"), function(el,i){
-      if(el.closest(".vsbadge")) return;   /* the VS runs its own entrance */
       el.classList.remove("wa-land","wa-sway");
       el.style.animationDelay = (120 + i*110) + "ms";
       void el.offsetWidth;
@@ -1059,11 +1068,11 @@ img{max-width:100%}
   modal.addEventListener("click", function(e){ if(e.target===modal) closeDialog(); });
   document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeDialog(); });
 
-  $("#splash").addEventListener("click", hideSplash);
+  $("#splash").addEventListener("click", skipSplash);
 
   function startOver(){
     G.phase = "cover"; G.champion = null; G.done = 0;
-    splashShownFor = -1; lastVsRound = -1;
+    splashShownFor = -1; hideSplash();
     G.photos.forEach(function(p){ p.outRound = null; });
     persist(); render();
   }
