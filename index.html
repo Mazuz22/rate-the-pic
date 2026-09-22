@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A Windows 98 knockout tournament for a year of photos.">
+<meta name="theme-color" content="#000080">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+body{margin:0;font-family:Tahoma,Verdana,sans-serif;font-size:14px;background:#008080;}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Rate the Pic &mdash; Yuval &amp; Rony One Year</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
+<style>
+  :root{
+    --desktop:#008080;
+    --face:#c0c0c0;
+    --face-lt:#dfdfdf;
+    --hilite:#ffffff;
+    --shadow:#808080;
+    --dkshadow:#000000;
+    --title-a:#000080;
+    --title-b:#1084d0;
+    --ink:#000000;
+    --paper:#ffffff;
+    --accent:#e0218a;
+    --ui: Tahoma, Verdana, Geneva, "DejaVu Sans", sans-serif;
+    --mono: "Courier New", Courier, monospace;
+  }
+
+  /* Single-theme on purpose: this is a Windows 98 machine, painted explicitly. */
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;background:var(--desktop);color:var(--ink);
+    font-family:var(--ui);font-size:13px;overflow:hidden;
+    -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;
+  }
+
+  button{
+    font-family:var(--ui);font-size:13px;color:var(--ink);background:var(--face);
+    border:0;cursor:pointer;padding:10px 14px;min-height:44px;touch-action:manipulation;
+    box-shadow:inset -1px -1px 0 var(--dkshadow), inset 1px 1px 0 var(--hilite), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);
+  }
+  button:active{
+    box-shadow:inset -1px -1px 0 var(--hilite), inset 1px 1px 0 var(--shadow), inset -2px -2px 0 var(--face-lt), inset 2px 2px 0 var(--dkshadow);
+    padding:11px 13px 9px 15px;
+  }
+  button:disabled{color:var(--shadow);text-shadow:1px 1px 0 var(--hilite);cursor:default;}
+  button:focus-visible{outline:2px dotted var(--ink);outline-offset:-5px;}
+  .primary{font-weight:bold;}
+
+  /* ---------- frame ---------- */
+  #app{height:100%;display:flex;flex-direction:column;background:var(--face);}
+  #chrome{
+    flex:0 0 auto;background:linear-gradient(90deg,var(--title-a),var(--title-b));
+    color:var(--hilite);display:flex;align-items:center;gap:8px;
+    padding:8px 10px 8px 12px;font-weight:bold;font-size:13px;
+    padding-top:calc(8px + env(safe-area-inset-top,0px));
+  }
+  #chrome svg{width:17px;height:17px;flex:0 0 auto;}
+  #chrome .tt{flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #chrome button{min-height:44px;width:44px;height:44px;padding:0;display:grid;place-items:center;
+    font-size:13px;margin:-6px -4px -6px 0;}
+  #chrome button:active{padding:0;}
+
+  #view{
+    flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;background:var(--shadow);padding:12px 16px 20px;
+  }
+  #dock{
+    flex:0 0 auto;background:var(--face);display:flex;align-items:stretch;gap:5px;
+    padding:5px 6px;padding-bottom:calc(5px + env(safe-area-inset-bottom,0px));
+    box-shadow:inset 0 1px 0 var(--hilite), inset 0 2px 0 var(--face-lt);
+  }
+  #dock button{flex:1 1 0;padding:8px 6px;font-size:12px;min-width:0;}
+  #dock .clockcell{flex:0 0 auto;display:flex;align-items:center;padding:0 9px;font-size:12px;
+    font-variant-numeric:tabular-nums;
+    box-shadow:inset -1px -1px 0 var(--hilite), inset 1px 1px 0 var(--shadow);}
+
+  .stage{max-width:620px;margin:0 auto;}
+  .card{background:var(--face);padding:14px;margin:0 auto 12px;max-width:620px;}
+  .card h3{font-family:var(--ui);font-size:15px;margin:0 0 8px;}
+  .card p{font-family:var(--ui);font-size:12.5px;line-height:1.55;margin:0 0 12px;color:#222;}
+  .card p:last-child{margin-bottom:0;}
+  .fileno{font-family:var(--mono);font-size:11px;color:#444;}
+
+  .wordart{display:block;width:100%;height:auto;max-width:100%;}
+
+  /* ---------- photos ---------- */
+  /* display:block matters — these are <span>s inside the pick buttons, and
+     aspect-ratio is ignored on an inline box, which lets photos run full height */
+  .photobox{
+    display:block;background:#1a1a1a;width:100%;aspect-ratio:3/4;overflow:hidden;position:relative;
+    box-shadow:inset -1px -1px 0 var(--hilite), inset 1px 1px 0 var(--shadow), inset -2px -2px 0 var(--face-lt), inset 2px 2px 0 var(--dkshadow);
+  }
+  .photobox img{width:100%;height:100%;object-fit:contain;display:block;}
+
+  #cover-photo{
+    position:relative;width:100%;aspect-ratio:4/3;background:#1a1a1a;overflow:hidden;margin:10px 0;
+    box-shadow:inset -1px -1px 0 var(--hilite), inset 1px 1px 0 var(--shadow), inset -2px -2px 0 var(--face-lt), inset 2px 2px 0 var(--dkshadow);
+  }
+  #cover-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+  #cover-photo .stamp{
+    position:absolute;left:0;right:0;bottom:0;padding:7px 10px;font-family:var(--ui);font-size:11.5px;
+    color:#fff;background:linear-gradient(0deg,rgba(0,0,0,.75),rgba(0,0,0,0));
+    display:flex;justify-content:space-between;gap:8px;
+  }
+
+  /* ---------- the match ---------- */
+  .prog{height:22px;background:var(--paper);padding:2px;display:flex;gap:2px;overflow:hidden;
+    box-shadow:inset -1px -1px 0 var(--hilite), inset 1px 1px 0 var(--shadow), inset -2px -2px 0 var(--face-lt), inset 2px 2px 0 var(--dkshadow);}
+  .prog i{flex:0 0 10px;background:var(--title-a);display:block;}
+  .proglabel{display:flex;justify-content:space-between;font-size:11.5px;margin:0 0 5px;font-family:var(--ui);}
+
+  .versus{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;}
+  .vs-pick{padding:0;background:var(--face);position:relative;overflow:hidden;min-height:0;}
+  .vs-pick:active{padding:0;}
+  .vs-pick .photobox{aspect-ratio:16/10;}
+  .vs-pick .lbl{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:9px 11px;font-family:var(--ui);font-size:12.5px;font-weight:bold;}
+  .vs-pick .when{color:#555;font-weight:normal;}
+  .vsbadge{display:grid;place-items:center;}
+  .vsbadge svg{width:76px;height:auto;}
+
+  /* ---------- results ---------- */
+  .crown{display:block;width:76px;height:auto;margin:0 auto 2px;}
+  .lb{list-style:none;margin:0;padding:0;}
+  .lb li{display:flex;align-items:center;gap:10px;padding:7px 0;box-shadow:inset 0 -1px 0 var(--shadow);}
+  .lb li:last-child{box-shadow:none;}
+  .lb .rk{font-family:Anton,Impact,sans-serif;font-size:17px;width:26px;text-align:right;color:var(--shadow);}
+  .lb .th{width:46px;height:46px;flex:0 0 auto;background:#1a1a1a;overflow:hidden;}
+  .lb .th img{width:100%;height:100%;object-fit:cover;display:block;}
+  .lb .nm{font-family:var(--ui);font-size:12px;color:#222;min-width:0;line-height:1.35;}
+  .lb .nm b{display:block;font-weight:normal;}
+  .lb .nm span{color:#777;}
+
+  .btnrow{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+  .btnrow button{flex:1 1 140px;}
+
+  /* ---------- the match fills the screen exactly ----------
+     Comparing two photos only works if both are on screen at once, so the match
+     view never scrolls: the title and bar take what they need and the two photos
+     split whatever is left. */
+  #view.fit{overflow:hidden;display:flex;}
+  #view.fit .stage{display:flex;flex-direction:column;width:100%;height:100%;gap:8px;}
+  #view.fit .card{margin:0;}
+  #view.fit .card.title{flex:0 0 auto;padding:6px 10px;}
+  #view.fit .card.title .wordart{max-height:13vh;}
+  #view.fit .card.body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:10px;}
+  #view.fit .versus{flex:1 1 auto;min-height:0;margin-top:8px;
+    grid-template-columns:1fr;grid-template-rows:1fr auto 1fr;}
+  #view.fit .vs-pick{min-height:0;display:flex;flex-direction:column;}
+  /* the slot flexes, the photo does not — object-fit:contain keeps every picture
+     at its own aspect ratio, letterboxed rather than cropped */
+  #view.fit .vs-pick .photobox{flex:1 1 auto;min-height:0;aspect-ratio:auto;}
+  #view.fit .vs-pick .lbl{flex:0 0 auto;padding:6px 9px;font-size:12px;}
+  #view.fit .vsbadge svg{max-height:38px;width:auto;}
+  #view.fit .askline{display:none;}
+
+  /* the hit counter every 1999 homepage had, wired to something true for once */
+  .odo{display:inline-flex;gap:2px;background:#000;padding:3px;margin-top:2px;
+    box-shadow:inset -1px -1px 0 var(--hilite), inset 1px 1px 0 var(--shadow), inset -2px -2px 0 var(--face-lt), inset 2px 2px 0 var(--dkshadow);}
+  .odo b{font-family:var(--mono);font-size:17px;font-weight:bold;color:#33ff33;
+    background:#0a1a0a;padding:1px 4px;line-height:1.2;font-variant-numeric:tabular-nums;}
+  .odolabel{font-size:11px;color:#444;margin:5px 0 0;font-family:var(--ui);}
+
+  .hearts{position:relative;height:44px;overflow:hidden;}
+  .hearts i{position:absolute;bottom:-18px;font-style:normal;color:var(--accent);font-size:16px;
+            animation:rise 4.5s linear infinite;}
+  @keyframes rise{to{transform:translateY(-66px) rotate(20deg);opacity:0;}}
+
+  /* ---------- whimsy ---------- */
+  @keyframes waLand{
+    0%  {opacity:0; transform:scale(.62) rotate(-7deg) translateY(14px);}
+    55% {opacity:1; transform:scale(1.07) rotate(2deg)  translateY(-4px);}
+    78% {           transform:scale(.975) rotate(-1deg) translateY(1px);}
+    100%{opacity:1; transform:scale(1) rotate(0) translateY(0);}
+  }
+  @keyframes waSway{
+    0%,100%{transform:rotate(-1.1deg) translateY(0);}
+    50%    {transform:rotate(1.1deg)  translateY(-3px);}
+  }
+  @keyframes blockIn{from{opacity:0;transform:translateY(14px) scale(.985);}to{opacity:1;transform:none;}}
+  @keyframes pop{from{transform:scale(.93);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .wa-land{animation:waLand .72s cubic-bezier(.34,1.5,.5,1) both;}
+  .wa-sway{animation:waSway 6s ease-in-out infinite; transform-origin:50% 70%;}
+  .stagger > *{animation:blockIn .52s cubic-bezier(.2,.9,.3,1) both;}
+  .pop{animation:pop .4s cubic-bezier(.2,1.4,.4,1) both;}
+
+  @media (prefers-reduced-motion: reduce){
+    .wa-land,.wa-sway,.stagger > *,.pop,.hearts i{animation:none !important;}
+  }
+
+  /* ---------- dialog ---------- */
+  #modal{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
+         background:rgba(0,0,0,.35);padding:16px;}
+  #modal.on{display:flex;}
+  #dlg{background:var(--face);padding:3px;width:min(430px,100%);max-height:86%;display:flex;flex-direction:column;
+    box-shadow:inset -1px -1px 0 var(--dkshadow), inset 1px 1px 0 var(--hilite), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);}
+  #dlg .bar{display:flex;align-items:center;padding:6px 6px 6px 9px;
+    background:linear-gradient(90deg,var(--title-a),var(--title-b));color:var(--hilite);font-weight:bold;font-size:13px;}
+  #dlg .bar span{flex:1 1 auto;}
+  #dlg .bar button{min-height:0;width:26px;height:22px;padding:0;display:grid;place-items:center;font-size:11px;}
+  #dlg .bd{padding:15px 14px;font-size:12.5px;line-height:1.6;overflow-y:auto;}
+  #dlg .bd p{margin:0 0 10px;}
+  #dlg .ft{display:flex;justify-content:flex-end;gap:6px;padding:0 12px 12px;}
+
+  /* on a phone the cover has to land whole — Start included — above the dock */
+  @media (max-height:900px){
+    #cover-title .wordart{max-height:15vh;}
+    #cover-sub .wordart{max-height:11vh;}
+    #cover-photo{aspect-ratio:16/11;margin:8px 0;}
+    .hearts{height:30px;}
+  }
+
+  @media (min-width:700px){
+    #view{padding:20px 24px 28px;}
+    .versus{grid-template-columns:1fr 1fr;align-items:start;}
+    .vsbadge{grid-column:1 / -1;order:-1;}
+    #view.fit .versus{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;}
+    #view.fit .vsbadge{grid-column:1 / -1;order:-1;}
+  }
+</style>
+
+</head>
+<body>
+<div id="app">
+  <div id="chrome">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M16 3l3.6 7.6 8.4 1.1-6.1 5.8 1.6 8.3L16 21.7 8.5 25.8l1.6-8.3L4 11.7l8.4-1.1z" fill="#ffd400" stroke="#000" stroke-width="1.6"/>
+    </svg>
+    <div class="tt" id="wintitle">Rate the Pic</div>
+    <button id="btn-help" aria-label="Help">?</button>
+  </div>
+
+  <div id="view"><div class="stage" id="stage"></div></div>
+
+  <div id="dock">
+    <button id="d-restart">Start over</button>
+    <button id="d-add">Add your own</button>
+    <div class="clockcell" id="clock">12:00</div>
+  </div>
+</div>
+
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="dlgtitle">
+  <div id="dlg">
+    <div class="bar"><span id="dlgtitle">Rate the Pic</span><button id="dlg-x" aria-label="Close">&#10005;</button></div>
+    <div class="bd" id="dlgbody"></div>
+    <div class="ft"><button id="dlg-ok" class="primary">OK</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+  function esc(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+  /* =====================================================================
+     THE WORDART GALLERY
+     ===================================================================== */
+  var FILLS = {
+    rainbowH: ["#2b5fd9","#8e2bd0","#d4202f","#ef7d1a","#f0c419","#4aa32e","#18a0a8","#2b5fd9"],
+    blueBlock:["#bcdcff","#4b9fe8","#1b5fbe"],
+    gold:     ["#ffe9a8","#f0a021","#b8560c"],
+    chrome:   ["#ffffff","#c3d0dc","#4d5f70","#a9b8c6","#ffffff"],
+    blueSteel:["#bfe6ff","#1084d0","#00004f"],
+    fire:     ["#ffe600","#ff6a00","#a4000d"],
+    grape:    ["#eec2ff","#a020f0","#2e0052"],
+    candy:    ["#ffb3e0","#e0218a","#5c00a3"],
+    emerald:  ["#e2ffa8","#3ea200","#07300a"],
+    silver:   ["#fbfbfb","#8f8f8f"],
+    lagoon:   ["#c8fff7","#00b3a4","#00373a"],
+    ember:    ["#ff5f5f","#c1000e","#240000"],
+    sunset:   ["#ffcf4d","#ff5d8f","#7b2ff7"],
+    rainbow:  ["#ffd400","#ff2d95","#6a00ff"]
+  };
+
+  /* Every path is drawn in a 640-wide space. `top` and `bot` are the highest and
+     lowest points the baseline reaches — the viewBox is then computed from the type
+     itself, so tall glyphs on a steep arc are never clipped. */
+  var SHAPES = {
+    plain:     {d:"M 18 90 L 622 90",                    top:90,  bot:90,  len:604},
+    archUp:    {d:"M 28 170 Q 320 16 612 170",           top:93,  bot:170, len:700},
+    archDown:  {d:"M 28 44 Q 320 198 612 44",            top:44,  bot:121, len:700},
+    wave:      {d:"M 18 112 Q 168 40 320 104 T 622 96",  top:76,  bot:112, len:660},
+    slantUp:   {d:"M 28 136 L 612 50",                   top:50,  bot:136, len:592},
+    slantDown: {d:"M 28 50 L 612 136",                   top:50,  bot:136, len:592},
+    triangle:  {d:"M 22 168 L 320 54 L 618 168",         top:54,  bot:168, len:640},
+    chevron:   {d:"M 22 56 L 320 170 L 618 56",          top:56,  bot:170, len:640},
+    dome:      {d:"M 34 206 A 290 186 0 0 1 606 206",    top:20,  bot:206, len:780}
+  };
+
+  var STYLES = [
+    {fill:"rainbowH", dir:"h", shape:"archUp",    stroke:"",        sw:0,   fx:"shadow", soft:true},
+    {fill:"blueBlock",dir:"v", shape:"slantUp",   stroke:"#0b3f86", sw:2.4, fx:"extrude", ext:"#1b4f9c", skew:-9,  sy:1.18},
+    {fill:"gold",     dir:"v", shape:"archUp",    stroke:"#5c2c00", sw:2.6, fx:"extrude", ext:"#7a3b06", skew:-9,  sy:1.14},
+    {fill:"silver",   dir:"v", shape:"plain",     stroke:"#9a9a9a", sw:3.2, fx:"outline", sy:1.2},
+    {fill:"fire",     dir:"v", shape:"wave",      stroke:"#000",    sw:3.2, fx:"none"},
+    {fill:"grape",    dir:"v", shape:"slantUp",   stroke:"#000",    sw:2.8, fx:"extrude", ext:"#3b0066", skew:-8},
+    {fill:"candy",    dir:"v", shape:"dome",      stroke:"#000",    sw:3.4, fx:"shadow"},
+    {fill:"emerald",  dir:"v", shape:"triangle",  stroke:"#000",    sw:3.0, fx:"none"},
+    {fill:"chrome",   dir:"v", shape:"plain",     stroke:"#000",    sw:3.0, fx:"extrude", ext:"#5b6b7a", shine:true, sy:1.12},
+    {fill:"lagoon",   dir:"v", shape:"archDown",  stroke:"#003",    sw:3.0, fx:"shadow"},
+    {fill:"ember",    dir:"v", shape:"slantDown", stroke:"#000",    sw:2.8, fx:"shadow", skew:-6},
+    {fill:"sunset",   dir:"h", shape:"plain",     stroke:"#000",    sw:3.4, fx:"extrude", ext:"#4a1d6b", skew:-10, sy:1.24},
+    {fill:"rainbow",  dir:"v", shape:"chevron",   stroke:"#000",    sw:3.2, fx:"shadow"},
+    {fill:"blueSteel",dir:"v", shape:"dome",      stroke:"#fff",    sw:4.4, fx:"shadow", shine:true}
+  ];
+
+  var CALM = false;
+  try{ CALM = window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){}
+
+  var waSeq = 0;
+  function wordArt(text, opt){
+    opt = opt || {};
+    var st = (typeof opt.style === "number")
+      ? STYLES[((opt.style % STYLES.length) + STYLES.length) % STYLES.length]
+      : (opt.style || STYLES[0]);
+    var sh = SHAPES[st.shape] || SHAPES.plain;
+    var stops = FILLS[st.fill] || FILLS.rainbow;
+    var id = "w" + (++waSeq);
+
+    /* Anton is condensed; ~0.49em average advance. Fit the run to the path length. */
+    var base = opt.size || 82;
+    var size = Math.max(16, Math.min(base, sh.len / (Math.max(text.length,1) * 0.49)));
+    var horiz = st.dir === "h";
+    var depth = st.fx === "extrude" ? Math.max(4, Math.round(size / 9)) : 0;
+
+    /* Glyphs rise above the baseline by about the cap height and fall below it by the
+       descender. Grow the box to hold both, plus the stroke and the extrusion. */
+    var rise = size * 0.82 + st.sw * 1.5 + depth + 6;
+    var drop = size * 0.28 + st.sw * 1.5 + depth + 6;
+    var minY = Math.min(0, sh.top - rise);
+    var boxH = (sh.bot + drop) - minY;
+
+    var s = '<svg class="wordart" viewBox="-10 ' + minY.toFixed(1) + ' 660 ' + boxH.toFixed(1) + '" '
+      + 'role="img" aria-label="' + esc(text) + '">'
+      + '<defs><linearGradient id="' + id + 'g" x1="0" y1="0" x2="' + (horiz ? "1" : "0") + '" y2="' + (horiz ? "0" : "1") + '">';
+    for(var i=0;i<stops.length;i++){
+      s += '<stop offset="' + Math.round(i/(stops.length-1)*100) + '%" stop-color="' + stops[i] + '"/>';
+    }
+    s += '</linearGradient>';
+
+    /* a highlight band travelling across the metal, the way chrome always wanted to */
+    if(st.shine && !CALM){
+      s += '<linearGradient id="' + id + 's" x1="0" y1="0" x2="1" y2="0">'
+        + '<stop offset="0%" stop-color="#fff" stop-opacity="0"/>'
+        + '<stop offset="45%" stop-color="#fff" stop-opacity="0"/>'
+        + '<stop offset="52%" stop-color="#fff" stop-opacity=".85"/>'
+        + '<stop offset="59%" stop-color="#fff" stop-opacity="0"/>'
+        + '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>'
+        + '<animateTransform attributeName="gradientTransform" type="translate" '
+        + 'values="-1 0; 1 0" dur="4.5s" repeatCount="indefinite"/></linearGradient>';
+    }
+    s += '<path id="' + id + 'p" d="' + sh.d + '" fill="none"/></defs><g class="waArt">';
+
+    function run(fill, stroke, sw, dx, dy, op){
+      return '<text transform="translate(' + dx + ',' + dy + ')" font-family="Anton, Impact, sans-serif" '
+        + 'font-size="' + size.toFixed(1) + '" fill="' + fill + '" '
+        + (op ? 'opacity="' + op + '" ' : '')
+        + (stroke ? 'stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linejoin="round" paint-order="stroke" ' : '')
+        + '><textPath href="#' + id + 'p" startOffset="50%" text-anchor="middle">' + esc(text) + '</textPath></text>';
+    }
+
+    /* The lean and the vertical stretch, both pivoted on the lowest baseline.
+       Stretching the letters taller than they are wide is half of what made real
+       WordArt look like WordArt; the gallery's tiles lean and stretch together. */
+    var open = "", close = "";
+    if(st.skew || st.sy){
+      open = '<g transform="translate(320,' + sh.bot + ')'
+        + (st.skew ? ' skewX(' + st.skew + ')' : '')
+        + (st.sy ? ' scale(1,' + st.sy + ')' : '')
+        + ' translate(-320,' + (-sh.bot) + ')">';
+      close = '</g>';
+    }
+    s += open;
+
+    if(st.fx === "extrude"){
+      /* the gallery threw its extrusion down and to the LEFT — deep and solid */
+      for(var k = depth; k >= 1; k--) s += run(st.ext, st.ext, 1.6, -k * 0.85, k * 0.7);
+    } else if(st.fx === "shadow"){
+      if(st.soft){
+        s += run("#b4b4b4", "", 0, 6, 6, ".75");
+        s += run("#8c8c8c", "", 0, 3, 3, ".55");
+      } else {
+        s += run("#7d7d7d", "#7d7d7d", 3, 5, 5);
+      }
+    }
+
+    if(st.fx === "outline"){
+      s += run("none", st.stroke, st.sw, 0, 0);
+    } else {
+      s += run("url(#" + id + "g)", st.stroke, st.sw, 0, 0);
+      if(st.shine && !CALM) s += run("url(#" + id + "s)", "", 0, 0, 0);
+    }
+    return s + close + '</g></svg>';
+  }
+
+  /* Letters on a curve are rotated, so no arithmetic guess at the headroom is
+     reliable — measure the art once it is in the document and fit the box to it.
+     This also trims the dead space a fixed box would leave under short words. */
+  function fitWordArt(root){
+    if(!root) return;
+    Array.prototype.forEach.call(root.querySelectorAll("svg.wordart"), function(svg){
+      var g = svg.querySelector("g.waArt");
+      if(!g) return;
+      var b;
+      try{ b = g.getBBox(); }catch(e){ return; }
+      if(!b || !b.width || !b.height) return;   /* not laid out yet */
+      var sw = 0;
+      Array.prototype.forEach.call(g.querySelectorAll("text"), function(t){
+        var v = parseFloat(t.getAttribute("stroke-width") || 0);
+        if(v > sw) sw = v;
+      });
+      var pad = sw + 4;                          /* getBBox ignores the stroke */
+      svg.setAttribute("viewBox",
+        (b.x - pad).toFixed(1) + " " + (b.y - pad).toFixed(1) + " "
+        + (b.width + pad*2).toFixed(1) + " " + (b.height + pad*2).toFixed(1));
+    });
+  }
+
+  /* =====================================================================
+     storage — IndexedDB only; a tournament in progress survives a reload
+     ===================================================================== */
+  var DB = null;
+  function idb(){
+    if(DB) return Promise.resolve(DB);
+    return new Promise(function(res, rej){
+      try{
+        var r = indexedDB.open("ratethepic", 1);
+        r.onupgradeneeded = function(){
+          var db = r.result;
+          if(!db.objectStoreNames.contains("kv")) db.createObjectStore("kv");
+        };
+        r.onsuccess = function(){ DB = r.result; res(DB); };
+        r.onerror = function(){ rej(r.error); };
+      }catch(e){ rej(e); }
+    });
+  }
+  function idbGet(k){
+    return idb().then(function(db){ return new Promise(function(res,rej){
+      var q = db.transaction("kv","readonly").objectStore("kv").get(k);
+      q.onsuccess = function(){ res(q.result); }; q.onerror = function(){ rej(q.error); };
+    });});
+  }
+  function idbSet(k,v){
+    return idb().then(function(db){ return new Promise(function(res,rej){
+      var q = db.transaction("kv","readwrite").objectStore("kv").put(v,k);
+      q.onsuccess = function(){ res(); }; q.onerror = function(){ rej(q.error); };
+    });});
+  }
+
+  /* =====================================================================
+     the field
+     ===================================================================== */
+  var BUILTIN = [
+    {f:"photos/p01.jpg", d:"28 Dec 2025"}, {f:"photos/p02.jpg", d:"31 Dec 2025"},
+    {f:"photos/p03.jpg", d:"2 Jan 2026"},  {f:"photos/p04.jpg", d:"2 Jan 2026"},
+    {f:"photos/p05.jpg", d:"2 Jan 2026"},  {f:"photos/p06.jpg", d:"2 Jan 2026"},
+    {f:"photos/p07.jpg", d:"29 Jan 2026"}, {f:"photos/p08.jpg", d:"5 Feb 2026"},
+    {f:"photos/p09.jpg", d:"6 Feb 2026"},  {f:"photos/p10.jpg", d:"10 Feb 2026"},
+    {f:"photos/p11.jpg", d:"10 Feb 2026"}, {f:"photos/p12.jpg", d:"4 Mar 2026"},
+    {f:"photos/p13.jpg", d:"14 Mar 2026"}, {f:"photos/p14.jpg", d:"19 Mar 2026"},
+    {f:"photos/p15.jpg", d:"19 Mar 2026"}, {f:"photos/p16.jpg", d:"22 Mar 2026"},
+    {f:"photos/p17.jpg", d:"22 Mar 2026"}, {f:"photos/p18.jpg", d:"22 Mar 2026"},
+    {f:"photos/p19.jpg", d:"22 Mar 2026"}, {f:"photos/p20.jpg", d:"25 Mar 2026"},
+    {f:"photos/p21.jpg", d:"31 Mar 2026"}, {f:"photos/p22.jpg", d:"31 Mar 2026"},
+    {f:"photos/p23.jpg", d:"31 Mar 2026"}, {f:"photos/p24.jpg", d:"1 Apr 2026"},
+    {f:"photos/p25.jpg", d:"12 Apr 2026"}, {f:"photos/p26.jpg", d:"12 Apr 2026"},
+    {f:"photos/p27.jpg", d:"12 Apr 2026"}, {f:"photos/p28.jpg", d:"12 Apr 2026"},
+    {f:"photos/p29.jpg", d:"12 Apr 2026"}, {f:"photos/p30.jpg", d:"12 Apr 2026"},
+    {f:"photos/p31.jpg", d:"20 Apr 2026"}, {f:"photos/p32.jpg", d:"31 May 2026"}
+  ];
+
+  var G = {
+    phase:"cover",      /* cover | match | champion */
+    photos:[], roundNo:0, pairs:[], mIdx:0, through:[], labels:[],
+    styleOrder:[], champion:null, done:0, total:0
+  };
+  var seq = 0;
+
+  function seedBuiltin(){
+    seq = 0;
+    G.photos = BUILTIN.map(function(b){ return {id:++seq, url:b.f, name:b.d, outRound:null}; });
+  }
+  function byId(id){ for(var i=0;i<G.photos.length;i++) if(G.photos[i].id===id) return G.photos[i]; return null; }
+  function persist(){
+    idbSet("tourney", {photos:G.photos, phase:G.phase, roundNo:G.roundNo, pairs:G.pairs,
+      mIdx:G.mIdx, through:G.through, labels:G.labels, styleOrder:G.styleOrder,
+      champion:G.champion, done:G.done, total:G.total, seq:seq}).catch(function(){});
+  }
+
+  /* =====================================================================
+     adding your own
+     ===================================================================== */
+  var picker = document.createElement("input");
+  picker.type = "file"; picker.accept = "image/*"; picker.multiple = true;
+  picker.style.display = "none"; document.body.appendChild(picker);
+
+  function downscale(file){
+    return new Promise(function(res){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        var max = 1280, w = img.naturalWidth, h = img.naturalHeight;
+        if(!w || !h){ URL.revokeObjectURL(url); res(null); return; }
+        var sc = Math.min(1, max/Math.max(w,h));
+        var c = document.createElement("canvas");
+        c.width = Math.round(w*sc); c.height = Math.round(h*sc);
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+        URL.revokeObjectURL(url);
+        try{ res(c.toDataURL("image/jpeg",0.8)); }catch(e){ res(null); }
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); res(null); };
+      img.src = url;
+    });
+  }
+
+  picker.addEventListener("change", function(){
+    var files = Array.prototype.slice.call(picker.files || []);
+    picker.value = "";
+    if(!files.length) return;
+    var failed = 0;
+    dialog("Opening", "<p>Reading " + files.length + " file" + (files.length===1?"":"s") + "&hellip;</p>");
+    Promise.all(files.map(function(f){
+      return downscale(f).then(function(u){
+        if(!u){ failed++; return null; }
+        return {id:++seq, url:u, name:f.name.replace(/\.[^.]+$/,""), outRound:null};
+      });
+    })).then(function(rows){
+      rows.forEach(function(r){ if(r) G.photos.push(r); });
+      closeDialog();
+      if(failed){
+        dialog("Add your own",
+          "<p><b>" + failed + " of " + files.length + "</b> could not be opened.</p>"
+          + "<p>Almost certainly HEIC, which browsers cannot decode. Picking them from the Photos "
+          + "app on a phone converts them to JPEG automatically.</p>");
+      }
+      startTournament(); persist(); render();
+    });
+  });
+
+  /* =====================================================================
+     the knockout
+     ===================================================================== */
+  function shuffled(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  }
+  function roundLabel(n){
+    if(n <= 2) return "The Final";
+    if(n <= 4) return "Semi-finals";
+    if(n <= 8) return "Quarter-finals";
+    return "Round of " + n;
+  }
+  /* "The Final" already carries its article; the others need one */
+  function outIn(i){
+    var l = G.labels[i];
+    if(!l) return "out in the first round";
+    var s = l.toLowerCase();
+    return "out in " + (s.indexOf("the ") === 0 ? s : "the " + s);
+  }
+
+  function startTournament(){
+    G.photos.forEach(function(p){ p.outRound = null; });
+    G.roundNo = 0; G.champion = null; G.through = []; G.labels = [];
+    G.done = 0; G.total = Math.max(0, G.photos.length - 1);
+    G.phase = "match";
+    /* a fresh run of the gallery, so no two tournaments wear the same titles */
+    G.styleOrder = shuffled(STYLES.map(function(_,i){ return i; }));
+    buildRound(shuffled(G.photos.map(function(p){ return p.id; })));
+  }
+
+  function buildRound(entrants){
+    G.labels[G.roundNo] = roundLabel(entrants.length);
+    G.through = []; G.pairs = [];
+    var list = entrants.slice();
+    /* an odd field means somebody walks into the next round untouched */
+    if(list.length % 2 === 1) G.through.push(list.pop());
+    for(var i=0;i<list.length;i+=2) G.pairs.push([list[i], list[i+1]]);
+    G.mIdx = 0;
+  }
+
+  function choose(winId, loseId){
+    var loser = byId(loseId);
+    if(loser) loser.outRound = G.roundNo;
+    G.through.push(winId);
+    G.mIdx++; G.done++;
+    if(G.mIdx >= G.pairs.length){
+      if(G.through.length <= 1){
+        G.champion = G.through[0];
+        G.phase = "champion";
+        CROWNED++;
+        idbSet("crowned", CROWNED).catch(function(){});
+      }
+      else { G.roundNo++; buildRound(G.through); }
+    }
+    persist(); render();
+  }
+
+  function standings(){
+    return G.photos.slice().sort(function(x,y){
+      var a = x.id===G.champion ? 99 : (x.outRound===null ? -1 : x.outRound);
+      var b = y.id===G.champion ? 99 : (y.outRound===null ? -1 : y.outRound);
+      return b - a;
+    });
+  }
+
+  /* =====================================================================
+     screens
+     ===================================================================== */
+  var stage = $("#stage");
+  var COVER_A = Math.floor(Math.random()*STYLES.length);
+  var COVER_B = (COVER_A + 5) % STYLES.length;
+  var CROWNED = 0;
+
+  function odometer(n){
+    var s = String(Math.max(0, n|0));
+    while(s.length < 6) s = "0" + s;      /* six digits, as they always were */
+    return s.split("").map(function(d){ return "<b>" + d + "</b>"; }).join("");
+  }
+
+  function render(){
+    if(G.phase === "cover")         renderCover();
+    else if(G.phase === "champion") renderChampion();
+    else                            renderMatch();
+    $("#wintitle").textContent = G.phase === "champion" ? "Pic of the Year" : "Rate the Pic";
+    /* only the match view is pinned to the viewport; cover and results scroll */
+    $("#view").classList.toggle("fit", G.phase === "match");
+    fitWordArt(stage);
+    animateIn(stage, 90);
+    $("#view").scrollTop = 0;
+  }
+
+  function renderCover(){
+    var pick = G.photos.length ? G.photos[Math.floor(Math.random()*G.photos.length)] : null;
+    stage.innerHTML =
+      '<div class="card" style="text-align:center">'
+      + '<div id="cover-title">' + wordArt("Rate the Pic", {style:COVER_A}) + '</div>'
+      + (pick
+          ? '<div id="cover-photo"><img src="' + pick.url + '" alt="Cover photo">'
+            + '<span class="stamp"><span>' + esc(pick.name) + '</span>'
+            + '<span>one of ' + G.photos.length + '</span></span></div>'
+          : '')
+      + '<div id="cover-sub">' + wordArt("Yuval & Rony", {style:COVER_B, size:64}) + '</div>'
+      + '<div class="hearts" id="hc"></div>'
+      + '</div>'
+      + '<div class="card">'
+      + '<p>Two photos at a time. Pick the one you like more &mdash; the other is out. '
+      + 'Keep going until one is left.</p>'
+      + '<p class="fileno">' + G.photos.length + ' photos &middot; '
+      + Math.max(0, G.photos.length-1) + ' matches &middot; one winner</p>'
+      + '<div class="btnrow"><button class="primary" id="c-start">Start</button></div>'
+      + '<div style="text-align:center;margin-top:12px">'
+      + '<div class="odo">' + odometer(CROWNED) + '</div>'
+      + '<p class="odolabel">winners crowned on this device</p>'
+      + '</div>'
+      + '</div>';
+    floatHearts("hc");
+    $("#c-start").addEventListener("click", function(){ startTournament(); persist(); render(); });
+  }
+
+  function renderMatch(){
+    if(!G.pairs.length || G.mIdx >= G.pairs.length) startTournament();
+    var pair = G.pairs[G.mIdx];
+    var a = byId(pair[0]), b = byId(pair[1]);
+    if(!a || !b){ G.mIdx++; return renderMatch(); }
+
+    var label = G.labels[G.roundNo] || "Round " + (G.roundNo+1);
+    var style = G.styleOrder[G.roundNo % G.styleOrder.length];
+    var cells = Math.round(G.done / Math.max(1,G.total) * 26), bar = "";
+    for(var i=0;i<cells;i++) bar += "<i></i>";
+
+    function side(p, other, key){
+      return '<button class="vs-pick" data-win="' + p.id + '" data-lose="' + other.id + '">'
+        + '<span class="photobox"><img src="' + p.url + '" alt=""></span>'
+        + '<span class="lbl"><span>' + esc(key) + '</span>'
+        + '<span class="when">' + esc(p.name || "") + '</span></span></button>';
+    }
+
+    stage.innerHTML =
+      '<div class="card title">' + wordArt(label, {style:style}) + '</div>'
+      + '<div class="card body">'
+      + '<div class="proglabel"><span>Match ' + (G.mIdx+1) + ' of ' + G.pairs.length + '</span>'
+      + '<span>' + G.done + ' / ' + G.total + ' overall</span></div>'
+      + '<div class="prog">' + bar + '</div>'
+      + '<p class="askline" style="margin:12px 0 0">Which one do you like more?</p>'
+      + '<div class="versus pop">'
+      + side(a, b, "This one")
+      + '<div class="vsbadge">' + wordArt("VS", {style:(style+6)%STYLES.length, size:90}) + '</div>'
+      + side(b, a, "Or this one")
+      + '</div></div>';
+
+    /* bound to the fresh node, so a re-render can never stack listeners */
+    var picked = false;
+    stage.querySelector(".versus").addEventListener("click", function(e){
+      var btn = e.target.closest("[data-win]");
+      if(!btn || picked) return;
+      picked = true;
+      choose(parseInt(btn.getAttribute("data-win"),10), parseInt(btn.getAttribute("data-lose"),10));
+    });
+  }
+
+  function renderChampion(){
+    var champ = byId(G.champion);
+    if(!champ){ startTournament(); return render(); }
+    var order = standings(), runner = order[1] || null;
+
+    stage.innerHTML =
+      '<div class="card pop" style="text-align:center">'
+      + '<svg class="crown" viewBox="0 0 80 54" aria-hidden="true">'
+      + '<path d="M6 46L2 12l20 14L40 4l18 22 20-14-4 34z" fill="#ffd400" stroke="#000" stroke-width="2.2" stroke-linejoin="round"/>'
+      + '<rect x="6" y="46" width="68" height="6" fill="#e0218a" stroke="#000" stroke-width="2.2"/>'
+      + '<circle cx="22" cy="30" r="3" fill="#e0218a" stroke="#000" stroke-width="1.4"/>'
+      + '<circle cx="40" cy="22" r="3" fill="#1084d0" stroke="#000" stroke-width="1.4"/>'
+      + '<circle cx="58" cy="30" r="3" fill="#e0218a" stroke="#000" stroke-width="1.4"/></svg>'
+      + wordArt("Pic of the Year", {style:G.styleOrder[0] || 2})
+      + '<div class="photobox" style="aspect-ratio:auto;max-height:52vh;margin-top:6px">'
+      + '<img src="' + champ.url + '" alt="The winning photo"></div>'
+      + '<p style="font-size:12px;color:#222;margin:10px 0 0">' + esc(champ.name)
+      + ' &middot; beat ' + G.labels.length + ' round' + (G.labels.length===1?"":"s")
+      + ' of ' + G.photos.length + ' photos</p>'
+      + '<div class="hearts" id="hw"></div></div>'
+      + (runner
+        ? '<div class="card"><h3>Runner-up</h3>'
+          + '<div class="photobox" style="aspect-ratio:4/3"><img src="' + runner.url + '" alt=""></div>'
+          + '<p style="text-align:center;padding-top:6px;margin:0">' + esc(runner.name)
+          + ' &middot; lost the final</p></div>'
+        : "")
+      + '<div class="card"><h3>How far everyone got</h3><ul class="lb">'
+      + order.map(function(p,i){
+          var how = p.id===G.champion ? "Winner" : (p.outRound===null ? "&mdash;" : outIn(p.outRound));
+          return '<li><span class="rk">' + (i+1) + '</span>'
+            + '<span class="th"><img src="' + p.url + '" alt="" loading="lazy"></span>'
+            + '<span class="nm"><b>' + esc(p.name) + '</b><span>' + how + '</span></span></li>';
+        }).join("")
+      + '</ul></div>'
+      + '<div class="card"><div class="btnrow">'
+      + '<button class="primary" id="c-again">Run it again</button></div></div>';
+
+    floatHearts("hw");
+    $("#c-again").addEventListener("click", function(){ startTournament(); persist(); render(); });
+  }
+
+  function floatHearts(id){
+    var host = document.getElementById(id);
+    if(!host) return;
+    var out = "";
+    for(var k=0;k<8;k++) out += '<i style="left:'+(5+k*12.5)+'%;animation-delay:-'+(k*0.55).toFixed(2)+'s">&#10084;</i>';
+    host.innerHTML = out;
+  }
+
+  /* =====================================================================
+     whimsy: things arrive, they don't just exist
+     ===================================================================== */
+  function animateIn(host, step){
+    if(CALM || !host) return;
+    step = step || 70;
+    host.classList.remove("stagger");
+    void host.offsetWidth;
+    Array.prototype.forEach.call(host.children, function(el,i){
+      el.style.animationDelay = (i*step) + "ms";
+    });
+    host.classList.add("stagger");
+
+    Array.prototype.forEach.call(host.querySelectorAll("svg.wordart"), function(el,i){
+      el.classList.remove("wa-land","wa-sway");
+      el.style.animationDelay = (120 + i*110) + "ms";
+      void el.offsetWidth;
+      el.classList.add("wa-land");
+      if(el.closest("#cover-title, #cover-sub")){
+        el.addEventListener("animationend", function(){
+          el.style.animationDelay = "0ms";
+          el.classList.remove("wa-land");
+          el.classList.add("wa-sway");
+        }, {once:true});
+      }
+    });
+  }
+
+  /* =====================================================================
+     chrome
+     ===================================================================== */
+  var modal = $("#modal");
+  function dialog(t,b){ $("#dlgtitle").textContent=t; $("#dlgbody").innerHTML=b; modal.classList.add("on"); }
+  function closeDialog(){ modal.classList.remove("on"); }
+  $("#dlg-ok").addEventListener("click", closeDialog);
+  $("#dlg-x").addEventListener("click", closeDialog);
+  modal.addEventListener("click", function(e){ if(e.target===modal) closeDialog(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeDialog(); });
+
+  $("#d-restart").addEventListener("click", function(){
+    G.phase = "cover"; G.champion = null; G.done = 0;
+    G.photos.forEach(function(p){ p.outRound = null; });
+    persist(); render();
+  });
+  $("#d-add").addEventListener("click", function(){ picker.click(); });
+  $("#btn-help").addEventListener("click", function(){
+    dialog("Help",
+      "<p>Two photos at a time. Tap the one you like more and the other is knocked out. "
+      + "32 photos go in, 31 matches, one comes out.</p>"
+      + "<p>Every round wears a different WordArt style, reshuffled each time you start over.</p>"
+      + "<p>Your progress saves on this device, so you can stop mid-bracket and come back to it.</p>");
+  });
+
+  function tick(){
+    var d=new Date(), h=d.getHours(), m=d.getMinutes(), ap=h>=12?"PM":"AM";
+    h=h%12; if(h===0) h=12;
+    $("#clock").textContent = h+":"+(m<10?"0":"")+m+" "+ap;
+  }
+  tick(); setInterval(tick, 20000);
+
+  /* =====================================================================
+     boot
+     ===================================================================== */
+  seedBuiltin();
+  render();
+
+  /* Anton decides the real glyph metrics, so re-fit once the face has landed */
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ fitWordArt(stage); }).catch(function(){});
+  }
+
+  idbGet("crowned").then(function(n){
+    if(typeof n === "number" && n > 0){
+      CROWNED = n;
+      if(G.phase === "cover") render();
+    }
+  }).catch(function(){});
+
+  /* pick a half-finished tournament back up where it was left */
+  idbGet("tourney").then(function(s){
+    if(s && s.photos && s.photos.length && s.pairs && s.phase && s.phase !== "cover"){
+      G.photos=s.photos; G.phase=s.phase; G.roundNo=s.roundNo||0;
+      G.pairs=s.pairs; G.mIdx=s.mIdx||0; G.through=s.through||[];
+      G.labels=s.labels||[]; G.champion=s.champion||null;
+      G.styleOrder=(s.styleOrder && s.styleOrder.length) ? s.styleOrder : G.styleOrder;
+      G.done=s.done||0; G.total=s.total||Math.max(0,G.photos.length-1);
+      seq = s.seq || G.photos.length;
+      render();
+    }
+  }).catch(function(){});
+})();
+</script>
+
+</body>
+</html>
