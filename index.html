@@ -89,27 +89,54 @@ img{max-width:100%}
   #taskbar button:active{padding:0 10px;}
   #taskbar svg{width:15px;height:15px;flex:0 0 auto;}
 
+  /* icon only — the word "Start" was costing width the progress readout needs */
   #tb-start{
-    font-weight:bold;border-radius:0 7px 7px 0;padding-right:13px;
+    flex:0 0 auto;width:40px;padding:0;justify-content:center;
+    border-radius:0 7px 7px 0;
     background:linear-gradient(180deg,#5cc04a 0%,#3d9b2f 45%,#2f7f24 100%);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.55), inset -1px -1px 0 rgba(0,0,0,.35);
-    text-shadow:1px 1px 1px rgba(0,0,0,.45);
   }
-  #tb-start:active{background:linear-gradient(180deg,#2f7f24 0%,#3d9b2f 55%,#5cc04a 100%);}
+  #tb-start:active{padding:0;background:linear-gradient(180deg,#2f7f24 0%,#3d9b2f 55%,#5cc04a 100%);}
+  #tb-start svg{width:18px;height:18px;}
 
-  #taskbar .task{
-    flex:0 1 auto;min-width:0;overflow:hidden;
-    background:rgba(255,255,255,.14);
-    box-shadow:inset 1px 1px 0 rgba(255,255,255,.3), inset -1px -1px 0 rgba(0,0,0,.28);
+  /* everything the old title and progress cards used to say, in one strip */
+  #tb-prog{
+    flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px;
+    padding:0 8px;color:#fff;
+    background:rgba(0,0,0,.16);
+    box-shadow:inset 1px 1px 0 rgba(0,0,0,.35), inset -1px -1px 0 rgba(255,255,255,.22);
   }
-  #taskbar .task:active{background:rgba(0,0,0,.2);}
-  #taskbar .task span{overflow:hidden;text-overflow:ellipsis;}
+  #tb-prog .pline{display:flex;justify-content:space-between;gap:8px;font-size:11px;line-height:1.1;}
+  #tb-prog #pround{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #tb-prog #pcount{flex:0 0 auto;font-variant-numeric:tabular-nums;opacity:.85;}
+  #tb-prog .prog{height:7px;padding:1px;background:#0b2f74;box-shadow:none;}
+  #tb-prog .prog i{flex:1 1 auto;background:#5cc04a;}
 
   #tray{
-    margin-left:auto;flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 9px;
+    flex:0 0 auto;display:flex;align-items:center;padding:0 8px;
     color:#fff;font-size:12px;font-variant-numeric:tabular-nums;
     background:rgba(0,0,0,.16);
     box-shadow:inset 1px 1px 0 rgba(0,0,0,.35), inset -1px -1px 0 rgba(255,255,255,.22);
+  }
+
+  /* ---------- the round splash ----------
+     The WordArt round title still gets its moment, it just doesn't camp on the
+     screen for the whole round. */
+  #splash{
+    position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.55);padding:24px;
+  }
+  #splash[hidden]{display:none;}
+  #splashart{width:100%;max-width:520px;animation:splashIn .5s cubic-bezier(.34,1.5,.5,1) both;}
+  #splash.out{animation:splashOut .35s ease-in both;}
+  @keyframes splashIn{
+    0%{opacity:0;transform:scale(.55) rotate(-8deg);}
+    60%{opacity:1;transform:scale(1.08) rotate(2deg);}
+    100%{opacity:1;transform:scale(1) rotate(0);}
+  }
+  @keyframes splashOut{to{opacity:0;transform:scale(1.12);}}
+  @media (prefers-reduced-motion: reduce){
+    #splashart,#splash.out{animation:none !important;}
   }
 
   /* the Start menu, with its vertical spine */
@@ -202,35 +229,22 @@ img{max-width:100%}
   .btnrow{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
   .btnrow button{flex:1 1 140px;}
 
-  /* ---------- the match fills the screen exactly ----------
-     Comparing two photos only works if both are on screen at once, so the match
-     view never scrolls: the title and bar take what they need and the two photos
-     split whatever is left. */
-  #view.fit{overflow:hidden;display:flex;padding:5px 6px 2px;}
-  #view.fit .stage{display:flex;flex-direction:column;width:100%;height:100%;gap:4px;}
-  #view.fit .card{margin:0;}
-  /* round title and progress share one card — one less gap, one less pair of edges */
-  #view.fit .card.title{flex:0 0 auto;padding:3px 7px 5px;}
-  #view.fit .card.title .wordart{max-height:5vh;}
-  #view.fit .card.body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:5px;}
-  #view.fit .proglabel{font-size:10.5px;margin:1px 0 2px;}
-  #view.fit .prog{height:9px;padding:1px;}
-  #view.fit .prog i{flex-basis:8px;}
-  /* the badge sits in the gutter between the photos instead of taking a row */
-  #view.fit .versus{flex:1 1 auto;min-height:0;margin-top:0;gap:26px;position:relative;
-    grid-template-columns:1fr;grid-template-rows:1fr 1fr;}
-  /* absolutely positioned, so it needs a width of its own — a width:100% SVG
-     inside a shrink-to-fit box resolves to nothing */
-  /* pinned right, while the date chip sits at the photo's left edge — the two
-     can never reach each other whatever shape the photo is */
-  #view.fit .vsbadge{position:absolute;right:2px;top:50%;left:auto;transform:translateY(-50%);
-    z-index:2;pointer-events:none;background:var(--face);padding:2px 7px;width:70px;}
-  #view.fit .vsbadge svg{width:100%;height:auto;max-height:none;display:block;}
+  /* ---------- the match view is only the photos ----------
+     Round name, match number and overall progress all live in the taskbar now,
+     so nothing competes with the pictures for the screen. */
+  #view.fit{overflow:hidden;display:flex;padding:4px 5px 2px;}
+  #view.fit .stage{display:flex;width:100%;height:100%;max-width:none;}
+  /* the badge is a real grid row, so it cannot land on a photo or its date */
+  #view.fit .versus{flex:1 1 auto;min-height:0;width:100%;margin:0;gap:4px;position:static;
+    grid-template-columns:1fr;grid-template-rows:1fr auto 1fr;}
+  #view.fit .vsbadge{position:static;transform:none;width:60px;margin:0 auto;padding:0;
+    background:none;box-shadow:none;}
+  #view.fit .vsbadge svg{width:100%;height:auto;max-height:28px;display:block;}
   #view.fit .vs-pick{min-height:0;display:flex;flex-direction:column;background:none;box-shadow:none;}
 
-  /* No fixed frame in the match view. A portrait photo in a wide short box is
-     mostly black bars, so the slot just centres the image and the image sizes
-     itself — natural aspect, as large as it fits, nothing cropped. */
+  /* No fixed frame. A portrait photo in a wide short box is mostly black bars,
+     so the slot just centres the image and the image sizes itself — natural
+     aspect, as large as it fits, nothing cropped. */
   #view.fit .vs-pick .photobox{
     flex:1 1 auto;min-height:0;aspect-ratio:auto;background:none;box-shadow:none;
     display:flex;align-items:center;justify-content:center;padding:0;
@@ -238,7 +252,6 @@ img{max-width:100%}
   #view.fit .vs-pick .shot-wrap img{
     box-shadow:0 0 0 1px var(--shadow), 2px 2px 0 rgba(0,0,0,.35);
   }
-  #view.fit .vsbadge svg{max-height:30px;width:auto;}
   #view.fit .askline{display:none;}
 
   /* the hit counter every 1999 homepage had, wired to something true for once */
@@ -319,28 +332,23 @@ img{max-width:100%}
   <div id="view"><div class="stage" id="stage"></div></div>
 
   <div id="taskbar">
-    <button id="tb-start" aria-haspopup="true" aria-expanded="false">
+    <button id="tb-start" aria-haspopup="true" aria-expanded="false" aria-label="Start menu">
       <svg viewBox="0 0 16 16" aria-hidden="true">
         <path d="M1 3.4L7 2.3v5.2H1z" fill="#ff3b30"/>
         <path d="M7.7 2.2L15 1v6.5H7.7z" fill="#4cd964"/>
         <path d="M1 8.2h6v5.2L1 12.3z" fill="#2196f3"/>
         <path d="M7.7 8.2H15V15l-7.3-1.2z" fill="#ffd400"/>
       </svg>
-      <span>Start</span>
     </button>
-    <button id="d-restart" class="task" aria-label="Start over">
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path d="M13 8a5 5 0 1 1-1.6-3.7" fill="none" stroke="currentColor" stroke-width="2"/>
-        <path d="M13 1.5V5H9.5" fill="none" stroke="currentColor" stroke-width="2"/>
-      </svg>
-      <span>Start over</span>
-    </button>
-    <div id="tray">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6h3l3-3v10L6 10H3z" fill="#e8e8e8"/><path d="M11 5.5a4 4 0 0 1 0 5" fill="none" stroke="#e8e8e8" stroke-width="1.3"/></svg>
-      <span id="clock">12:00</span>
+    <div id="tb-prog">
+      <div class="pline"><span id="pround">&nbsp;</span><span id="pcount">&nbsp;</span></div>
+      <div class="prog" id="pbar"></div>
     </div>
+    <div id="tray"><span id="clock">12:00</span></div>
   </div>
 </div>
+
+<div id="splash" hidden><div id="splashart"></div></div>
 
 <div id="modal" role="dialog" aria-modal="true" aria-labelledby="dlgtitle">
   <div id="dlg">
@@ -774,6 +782,51 @@ img{max-width:100%}
     return s.split("").map(function(d){ return "<b>" + d + "</b>"; }).join("");
   }
 
+  /* ---------- the taskbar carries the numbers ---------- */
+  function updateTaskbar(){
+    var round = $("#pround"), count = $("#pcount"), bar = $("#pbar");
+    if(!round) return;
+    if(G.phase === "match"){
+      round.textContent = G.labels[G.roundNo] || "Round " + (G.roundNo + 1);
+      count.textContent = (G.mIdx + 1) + "/" + G.pairs.length;
+    } else if(G.phase === "champion"){
+      round.textContent = "Pic of the Year";
+      count.textContent = G.total + "/" + G.total;
+    } else {
+      round.textContent = G.photos.length + " photos";
+      count.textContent = Math.max(0, G.photos.length - 1) + " matches";
+    }
+    var pct = G.total ? G.done / G.total : 0;
+    var n = Math.max(0, Math.round(pct * 30)), s = "";
+    for(var i=0;i<n;i++) s += "<i></i>";
+    bar.innerHTML = s;
+  }
+
+  /* ---------- the round splash ----------
+     The WordArt title still announces each round, then gets out of the way. */
+  var splashShownFor = -1, splashTimer = null;
+  function maybeSplash(){
+    if(G.phase !== "match") return;
+    if(G.roundNo === splashShownFor) return;
+    splashShownFor = G.roundNo;
+    var el = $("#splash");
+    if(!el) return;
+    var label = G.labels[G.roundNo] || "Round " + (G.roundNo + 1);
+    $("#splashart").innerHTML = wordArt(label, {style:G.styleOrder[G.roundNo % G.styleOrder.length]});
+    el.classList.remove("out");
+    el.hidden = false;
+    fitWordArt(el);
+    clearTimeout(splashTimer);
+    splashTimer = setTimeout(hideSplash, CALM ? 900 : 1500);
+  }
+  function hideSplash(){
+    var el = $("#splash");
+    if(!el || el.hidden) return;
+    clearTimeout(splashTimer);
+    el.classList.add("out");
+    setTimeout(function(){ el.hidden = true; el.classList.remove("out"); }, CALM ? 0 : 330);
+  }
+
   function render(){
     if(G.phase === "cover")         renderCover();
     else if(G.phase === "champion") renderChampion();
@@ -783,6 +836,8 @@ img{max-width:100%}
     $("#view").classList.toggle("fit", G.phase === "match");
     fitWordArt(stage);
     animateIn(stage, 90);
+    updateTaskbar();
+    maybeSplash();
     $("#view").scrollTop = 0;
   }
 
@@ -820,13 +875,10 @@ img{max-width:100%}
     var a = byId(pair[0]), b = byId(pair[1]);
     if(!a || !b){ G.mIdx++; return renderMatch(); }
 
-    var label = G.labels[G.roundNo] || "Round " + (G.roundNo+1);
     var style = G.styleOrder[G.roundNo % G.styleOrder.length];
-    var cells = Math.round(G.done / Math.max(1,G.total) * 26), bar = "";
-    for(var i=0;i<cells;i++) bar += "<i></i>";
 
     /* the date rides on the picture's own corner, so it costs no layout height
-       and cannot collide with the badge in the gutter */
+       and cannot collide with the badge between the photos */
     function side(p, other, key){
       return '<button class="vs-pick" data-win="' + p.id + '" data-lose="' + other.id + '">'
         + '<span class="photobox"><span class="shot-wrap">'
@@ -836,18 +888,11 @@ img{max-width:100%}
     }
 
     stage.innerHTML =
-      '<div class="card title">' + wordArt(label, {style:style})
-      + '<div class="proglabel"><span>Match ' + (G.mIdx+1) + ' of ' + G.pairs.length + '</span>'
-      + '<span>' + G.done + ' / ' + G.total + ' overall</span></div>'
-      + '<div class="prog">' + bar + '</div>'
-      + '</div>'
-      + '<div class="card body">'
-      + '<p class="askline" style="margin:0 0 8px">Which one do you like more?</p>'
-      + '<div class="versus pop">'
+      '<div class="versus pop">'
       + side(a, b, "This one")
       + '<div class="vsbadge">' + wordArt("VS", {style:(style+6)%STYLES.length, size:90}) + '</div>'
       + side(b, a, "Or this one")
-      + '</div></div>';
+      + '</div>';
 
     /* Give each wrapper the photo's own shape so it hugs the image exactly.
        Which dimension leads depends on whether the photo is wider or taller than
@@ -967,8 +1012,11 @@ img{max-width:100%}
   modal.addEventListener("click", function(e){ if(e.target===modal) closeDialog(); });
   document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeDialog(); });
 
+  $("#splash").addEventListener("click", hideSplash);
+
   function startOver(){
     G.phase = "cover"; G.champion = null; G.done = 0;
+    splashShownFor = -1;
     G.photos.forEach(function(p){ p.outRound = null; });
     persist(); render();
   }
@@ -979,7 +1027,7 @@ img{max-width:100%}
       + "<p>Every round wears a different WordArt style, reshuffled each time you start over.</p>"
       + "<p>Your progress saves on this device, so you can stop mid-bracket and come back to it.</p>");
   }
-  $("#d-restart").addEventListener("click", startOver);
+  /* Start over now lives in the Start menu — the taskbar strip is the progress readout */
 
   /* ---------- Start menu ---------- */
   function closeStart(){
