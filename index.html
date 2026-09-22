@@ -335,7 +335,11 @@ img{max-width:100%}
   @media (min-width:700px){
     #view{padding:20px 24px 28px;}
     .versus{grid-template-columns:1fr 1fr;align-items:start;}
-    #view.fit .versus{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;}
+    /* One row, not "auto 1fr" — that was sized for the VS badge that used to sit
+       in row 1. And align-items must go back to stretch: the rule above sets
+       start for the scrolling layouts, which here let the picks size to their
+       content and spill straight out of a landscape viewport. */
+    #view.fit .versus{grid-template-columns:1fr 1fr;grid-template-rows:1fr;align-items:stretch;}
   }
 </style>
 
