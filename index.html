@@ -214,6 +214,33 @@ img{max-width:100%}
   .vsbadge{display:grid;place-items:center;}
   .vsbadge svg{width:76px;height:auto;}
 
+  /* ---------- the VS ----------
+     It draws a fresh gallery style each round, so the change gets an entrance
+     to announce it, then settles into a slow beat between matches. */
+  @keyframes vsPop{
+    0%  {opacity:0; transform:scale(.2) rotate(-200deg);}
+    55% {opacity:1; transform:scale(1.35) rotate(14deg);}
+    75% {           transform:scale(.92) rotate(-7deg);}
+    90% {           transform:scale(1.05) rotate(2deg);}
+    100%{opacity:1; transform:scale(1) rotate(0);}
+  }
+  @keyframes vsSnap{
+    0%  {opacity:0; transform:scale(.6);}
+    70% {opacity:1; transform:scale(1.12);}
+    100%{opacity:1; transform:scale(1);}
+  }
+  @keyframes vsBeat{
+    0%,100%{transform:scale(1) rotate(0);}
+    42%    {transform:scale(1.09) rotate(-2.5deg);}
+    68%    {transform:scale(.97) rotate(1.5deg);}
+  }
+  .vs-new{animation:vsPop .8s cubic-bezier(.3,1.5,.5,1) both;}
+  .vs-snap{animation:vsSnap .34s cubic-bezier(.34,1.5,.5,1) both;}
+  .vs-beat{animation:vsBeat 2.8s ease-in-out infinite;}
+  @media (prefers-reduced-motion: reduce){
+    .vs-new,.vs-snap,.vs-beat{animation:none !important;}
+  }
+
   /* ---------- results ---------- */
   .crown{display:block;width:76px;height:auto;margin:0 auto 2px;}
   .lb{list-style:none;margin:0;padding:0;}
@@ -633,7 +660,7 @@ img{max-width:100%}
   var G = {
     phase:"cover",      /* cover | match | champion */
     photos:[], roundNo:0, pairs:[], mIdx:0, through:[], labels:[],
-    styleOrder:[], champion:null, done:0, total:0
+    styleOrder:[], vsOrder:[], champion:null, done:0, total:0
   };
   var seq = 0;
 
@@ -644,7 +671,7 @@ img{max-width:100%}
   function byId(id){ for(var i=0;i<G.photos.length;i++) if(G.photos[i].id===id) return G.photos[i]; return null; }
   function persist(){
     idbSet("tourney", {photos:G.photos, phase:G.phase, roundNo:G.roundNo, pairs:G.pairs,
-      mIdx:G.mIdx, through:G.through, labels:G.labels, styleOrder:G.styleOrder,
+      mIdx:G.mIdx, through:G.through, labels:G.labels, styleOrder:G.styleOrder, vsOrder:G.vsOrder,
       champion:G.champion, done:G.done, total:G.total, seq:seq}).catch(function(){});
   }
 
@@ -730,6 +757,8 @@ img{max-width:100%}
     G.phase = "match";
     /* a fresh run of the gallery, so no two tournaments wear the same titles */
     G.styleOrder = shuffled(STYLES.map(function(_,i){ return i; }));
+    /* the VS draws from its own shuffle, so it never just trails the title's style */
+    G.vsOrder = shuffled(STYLES.map(function(_,i){ return i; }));
     buildRound(shuffled(G.photos.map(function(p){ return p.id; })));
   }
 
@@ -804,7 +833,7 @@ img{max-width:100%}
 
   /* ---------- the round splash ----------
      The WordArt title still announces each round, then gets out of the way. */
-  var splashShownFor = -1, splashTimer = null;
+  var splashShownFor = -1, splashTimer = null, lastVsRound = -1;
   function maybeSplash(){
     if(G.phase !== "match") return;
     if(G.roundNo === splashShownFor) return;
@@ -876,6 +905,9 @@ img{max-width:100%}
     if(!a || !b){ G.mIdx++; return renderMatch(); }
 
     var style = G.styleOrder[G.roundNo % G.styleOrder.length];
+    var vsStyle = (G.vsOrder && G.vsOrder.length)
+      ? G.vsOrder[G.roundNo % G.vsOrder.length]
+      : (style + 6) % STYLES.length;
 
     /* the date rides on the picture's own corner, so it costs no layout height
        and cannot collide with the badge between the photos */
@@ -890,7 +922,7 @@ img{max-width:100%}
     stage.innerHTML =
       '<div class="versus pop">'
       + side(a, b, "This one")
-      + '<div class="vsbadge">' + wordArt("VS", {style:(style+6)%STYLES.length, size:90}) + '</div>'
+      + '<div class="vsbadge">' + wordArt("VS", {style:vsStyle, size:90}) + '</div>'
       + side(b, a, "Or this one")
       + '</div>';
 
@@ -913,6 +945,20 @@ img{max-width:100%}
       if(img.complete) shrinkWrap(img);
       else img.addEventListener("load", function(){ shrinkWrap(img); }, {once:true});
     });
+
+    /* A new round brings a new VS style, so it gets a full entrance to announce
+       the change; within a round it just snaps in. Either way it ends on a slow
+       beat so the thing never sits perfectly still. */
+    var vsEl = stage.querySelector(".vsbadge");
+    if(vsEl && !CALM){
+      var freshRound = (G.roundNo !== lastVsRound);
+      lastVsRound = G.roundNo;
+      vsEl.classList.add(freshRound ? "vs-new" : "vs-snap");
+      vsEl.addEventListener("animationend", function(){
+        vsEl.classList.remove("vs-new","vs-snap");
+        vsEl.classList.add("vs-beat");
+      }, {once:true});
+    }
 
     /* bound to the fresh node, so a re-render can never stack listeners */
     var picked = false;
@@ -987,6 +1033,7 @@ img{max-width:100%}
     host.classList.add("stagger");
 
     Array.prototype.forEach.call(host.querySelectorAll("svg.wordart"), function(el,i){
+      if(el.closest(".vsbadge")) return;   /* the VS runs its own entrance */
       el.classList.remove("wa-land","wa-sway");
       el.style.animationDelay = (120 + i*110) + "ms";
       void el.offsetWidth;
@@ -1016,7 +1063,7 @@ img{max-width:100%}
 
   function startOver(){
     G.phase = "cover"; G.champion = null; G.done = 0;
-    splashShownFor = -1;
+    splashShownFor = -1; lastVsRound = -1;
     G.photos.forEach(function(p){ p.outRound = null; });
     persist(); render();
   }
@@ -1100,6 +1147,7 @@ img{max-width:100%}
       G.pairs=s.pairs; G.mIdx=s.mIdx||0; G.through=s.through||[];
       G.labels=s.labels||[]; G.champion=s.champion||null;
       G.styleOrder=(s.styleOrder && s.styleOrder.length) ? s.styleOrder : G.styleOrder;
+      G.vsOrder=(s.vsOrder && s.vsOrder.length) ? s.vsOrder : G.vsOrder;
       G.done=s.done||0; G.total=s.total||Math.max(0,G.photos.length-1);
       seq = s.seq || G.photos.length;
       render();
