@@ -172,10 +172,18 @@ img{max-width:100%}
   .versus{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;}
   .vs-pick{padding:0;background:var(--face);position:relative;overflow:hidden;min-height:0;}
   .vs-pick:active{padding:0;}
-  .vs-pick .photobox{aspect-ratio:16/10;}
-  .vs-pick .lbl{display:flex;align-items:center;justify-content:space-between;gap:8px;
-    padding:9px 11px;font-family:var(--ui);font-size:12.5px;font-weight:bold;}
-  .vs-pick .when{color:#555;font-weight:normal;}
+  .vs-pick .photobox{aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;}
+  /* The wrapper takes the picture's own aspect ratio (set from naturalWidth once
+     it loads), so it shrink-wraps the image exactly and the date chip pins to the
+     photo's corner rather than floating in the slot. A flex wrapper would stretch
+     the image instead — that was the bug. */
+  .shot-wrap{position:relative;display:block;height:100%;width:auto;
+    max-width:100%;max-height:100%;min-height:0;}
+  .shot-wrap img{display:block;width:100%;height:100%;object-fit:contain;}
+  .shot-wrap .when{
+    position:absolute;left:0;bottom:0;background:rgba(0,0,0,.62);color:#fff;
+    font-family:var(--ui);font-size:11px;padding:2px 6px;letter-spacing:.01em;
+  }
   .vsbadge{display:grid;place-items:center;}
   .vsbadge svg{width:76px;height:auto;}
 
@@ -198,22 +206,25 @@ img{max-width:100%}
      Comparing two photos only works if both are on screen at once, so the match
      view never scrolls: the title and bar take what they need and the two photos
      split whatever is left. */
-  #view.fit{overflow:hidden;display:flex;padding:8px 10px 10px;}
-  #view.fit .stage{display:flex;flex-direction:column;width:100%;height:100%;gap:6px;}
+  #view.fit{overflow:hidden;display:flex;padding:5px 6px 2px;}
+  #view.fit .stage{display:flex;flex-direction:column;width:100%;height:100%;gap:4px;}
   #view.fit .card{margin:0;}
-  #view.fit .card.title{flex:0 0 auto;padding:3px 8px;}
-  #view.fit .card.title .wordart{max-height:6vh;}
-  #view.fit .card.body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:6px;}
-  #view.fit .proglabel{font-size:10.5px;margin-bottom:2px;}
-  #view.fit .prog{height:10px;padding:1px;}
+  /* round title and progress share one card — one less gap, one less pair of edges */
+  #view.fit .card.title{flex:0 0 auto;padding:3px 7px 5px;}
+  #view.fit .card.title .wordart{max-height:5vh;}
+  #view.fit .card.body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:5px;}
+  #view.fit .proglabel{font-size:10.5px;margin:1px 0 2px;}
+  #view.fit .prog{height:9px;padding:1px;}
   #view.fit .prog i{flex-basis:8px;}
   /* the badge sits in the gutter between the photos instead of taking a row */
-  #view.fit .versus{flex:1 1 auto;min-height:0;margin-top:4px;gap:20px;position:relative;
+  #view.fit .versus{flex:1 1 auto;min-height:0;margin-top:0;gap:26px;position:relative;
     grid-template-columns:1fr;grid-template-rows:1fr 1fr;}
   /* absolutely positioned, so it needs a width of its own — a width:100% SVG
      inside a shrink-to-fit box resolves to nothing */
-  #view.fit .vsbadge{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    z-index:2;pointer-events:none;background:var(--face);padding:2px 8px;width:76px;}
+  /* pinned right, while the date chip sits at the photo's left edge — the two
+     can never reach each other whatever shape the photo is */
+  #view.fit .vsbadge{position:absolute;right:2px;top:50%;left:auto;transform:translateY(-50%);
+    z-index:2;pointer-events:none;background:var(--face);padding:2px 7px;width:70px;}
   #view.fit .vsbadge svg{width:100%;height:auto;max-height:none;display:block;}
   #view.fit .vs-pick{min-height:0;display:flex;flex-direction:column;background:none;box-shadow:none;}
 
@@ -224,14 +235,9 @@ img{max-width:100%}
     flex:1 1 auto;min-height:0;aspect-ratio:auto;background:none;box-shadow:none;
     display:flex;align-items:center;justify-content:center;padding:0;
   }
-  #view.fit .vs-pick .photobox img{
-    width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;
+  #view.fit .vs-pick .shot-wrap img{
     box-shadow:0 0 0 1px var(--shadow), 2px 2px 0 rgba(0,0,0,.35);
   }
-  #view.fit .vs-pick .lbl{flex:0 0 auto;padding:3px 4px 0;font-size:11.5px;
-    justify-content:center;font-weight:normal;}
-  #view.fit .vs-pick .when{color:#333;}
-  #view.fit .vs-pick .pickword{display:none;}
   #view.fit .vsbadge svg{max-height:30px;width:auto;}
   #view.fit .askline{display:none;}
 
@@ -819,25 +825,49 @@ img{max-width:100%}
     var cells = Math.round(G.done / Math.max(1,G.total) * 26), bar = "";
     for(var i=0;i<cells;i++) bar += "<i></i>";
 
+    /* the date rides on the picture's own corner, so it costs no layout height
+       and cannot collide with the badge in the gutter */
     function side(p, other, key){
       return '<button class="vs-pick" data-win="' + p.id + '" data-lose="' + other.id + '">'
-        + '<span class="photobox"><img src="' + p.url + '" alt=""></span>'
-        + '<span class="lbl"><span class="pickword">' + esc(key) + '</span>'
-        + '<span class="when">' + esc(p.name || "") + '</span></span></button>';
+        + '<span class="photobox"><span class="shot-wrap">'
+        + '<img src="' + p.url + '" alt="' + esc(key) + '">'
+        + '<span class="when">' + esc(p.name || "") + '</span>'
+        + '</span></span></button>';
     }
 
     stage.innerHTML =
-      '<div class="card title">' + wordArt(label, {style:style}) + '</div>'
-      + '<div class="card body">'
+      '<div class="card title">' + wordArt(label, {style:style})
       + '<div class="proglabel"><span>Match ' + (G.mIdx+1) + ' of ' + G.pairs.length + '</span>'
       + '<span>' + G.done + ' / ' + G.total + ' overall</span></div>'
       + '<div class="prog">' + bar + '</div>'
-      + '<p class="askline" style="margin:12px 0 0">Which one do you like more?</p>'
+      + '</div>'
+      + '<div class="card body">'
+      + '<p class="askline" style="margin:0 0 8px">Which one do you like more?</p>'
       + '<div class="versus pop">'
       + side(a, b, "This one")
       + '<div class="vsbadge">' + wordArt("VS", {style:(style+6)%STYLES.length, size:90}) + '</div>'
       + side(b, a, "Or this one")
       + '</div></div>';
+
+    /* Give each wrapper the photo's own shape so it hugs the image exactly.
+       Which dimension leads depends on whether the photo is wider or taller than
+       its slot — pin the wrong one and the wrapper keeps full height on a
+       landscape shot, leaving the date chip floating off the picture. */
+    function shrinkWrap(img){
+      if(!img.naturalWidth || !img.naturalHeight) return;
+      var w = img.parentNode, slot = w.parentNode.getBoundingClientRect();
+      if(!slot.width || !slot.height) return;
+      w.style.aspectRatio = img.naturalWidth + " / " + img.naturalHeight;
+      if(img.naturalWidth / img.naturalHeight > slot.width / slot.height){
+        w.style.width = "100%"; w.style.height = "auto";   /* wider than the slot */
+      } else {
+        w.style.height = "100%"; w.style.width = "auto";   /* taller than the slot */
+      }
+    }
+    Array.prototype.forEach.call(stage.querySelectorAll(".shot-wrap img"), function(img){
+      if(img.complete) shrinkWrap(img);
+      else img.addEventListener("load", function(){ shrinkWrap(img); }, {once:true});
+    });
 
     /* bound to the fresh node, so a re-render can never stack listeners */
     var picked = false;
